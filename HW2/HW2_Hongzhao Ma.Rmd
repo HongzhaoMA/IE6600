@@ -1,0 +1,80 @@
+---
+title: "Homework 2"
+author: "Hongzhao Ma"
+date: "2/8/2020"
+output: html_document
+---
+
+```{r}
+# Homework 2
+# Hongzhao Ma
+# Section 03
+# Load the packages and read the data file
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+airlines_delay <- read.csv("airlines_delay.csv", header = T)
+```
+
+```{r}
+# Question 1
+# Compute the total number of arrival delays (in mins) for each carrier
+total_delays <- airlines_delay %>%
+  group_by(carrier) %>%
+  drop_na() %>%
+  summarise(total_arr_delay = sum(arr_delay))
+# Draw a bar plot to show the top 10 carriers by arrival delays
+p1 <- top_n(total_delays, n = 10, total_arr_delay) %>%
+  ggplot(aes(x = reorder(carrier, total_arr_delay), y = total_arr_delay)) + geom_bar(stat = "identity", fill = "#005582") + coord_flip()
+p1
+```
+
+```{r}
+# Question 2
+# Set the variable year as factor
+airlines_delay$year <- as.factor(airlines_delay$year)
+# Group arrival delays by carriers and years
+total_delays_2 <- airlines_delay %>%
+  group_by(carrier, year) %>%
+  drop_na() %>%
+  summarise(total_arr_delay = sum(arr_delay))
+# Filter by top 10 carriers and draw the stacked bar plot
+carrier_label <- c("AA", "B6", "DL", "EV", "F9", "MQ", "OO", "UA", "US", "WN")
+p2 <- total_delays_2 %>%
+  filter(carrier %in% carrier_label) %>%
+  ggplot(aes(x = reorder(carrier, total_arr_delay), y = total_arr_delay, fill = year)) + geom_bar(stat = "identity") + coord_flip()
+p2
+```
+
+```{r}
+# Question 3
+# Convert the original delay data to two columns: delay_type and mins
+delays <- gather(airlines_delay, "delay_type", "delay_in_mins", 12:16)
+# Log the variable delay_in_mins
+delays$Log_delay_in_mins <- log(delays$delay_in_mins)
+# Draw the density plot
+p3 <- delays %>%
+  ggplot(aes(x = Log_delay_in_mins, fill = delay_type)) + geom_density(alpha = 0.5) + xlab("Log delay in mins")
+p3
+```
+
+```{r}
+# Question 4
+# sum up delay times by carrier and delay_type, then draw the heatmap
+delays %>%
+  group_by(carrier, delay_type) %>%
+  drop_na() %>%
+  summarise(sum_delay = sum(delay_in_mins)) %>%
+  ggplot(aes(delay_type, carrier, fill = sum_delay)) +
+  geom_tile()
+```
+
+```{r}
+# Question 5
+p4 <- delays %>%
+  group_by(year, delay_type) %>%
+  drop_na() %>%
+  summarise(sum_delay = sum(delay_in_mins)) %>%
+  ggplot(aes(x = factor(year), y = sum_delay, group = delay_type, color = delay_type)) + geom_line() + geom_point(size = 2)
+p4
+```
